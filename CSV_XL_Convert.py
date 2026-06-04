@@ -2,24 +2,40 @@ import os
 import openpyxl
 import pandas as pd
 import argparse
+import logging
 
+#For logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("log.txt"),
+        logging.StreamHandler()
+    ]
+)
+
+#for CLI argument -argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--input',required = True, help='Path to CSV  File')
 parser.add_argument('--output',required = True, help='Path to save Excel File')
 args = parser.parse_args()
 
+#for file not found error
 if not os.path.exists(args.input):
     print(f"Error: File {args.input} not found")
+    logging.error(f"Error: File {args.input} not found")
     exit()
 
 if not args.input.lower().endswith('.csv'):
-    print(f"Error: File {args.input} is not in csv format.")
+    logging.error(f"Error: File {args.input} is not in csv format.")
+    exit()
 
+#for cleaning and normalizing data -pandas
 df = pd.read_csv(args.input)
 
 df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
-dfm= df.drop_duplicates()
+df = df.drop_duplicates()
 df = df.fillna('')
 for col in df.select_dtypes(include = 'str').columns:
     df[col] = df[col].str.strip()
@@ -33,7 +49,8 @@ for col in df.columns:
 
 df.to_excel(args.output,index=False)
 
-wb = openpyxl.load_workbook('ABCD.xlsx')
+#for formatting the excel file -openpyxl
+wb = openpyxl.load_workbook(args.output)
 ws = wb.active
 
 for col in ws.columns:
@@ -45,4 +62,4 @@ for cell in ws[1]:
     cell.font = openpyxl.styles.Font(bold= True)
 
 wb.save('ABCD.xlsx')
-print("Done!")
+logging.info(f"{args.input} file converted to {args.output} file.")
